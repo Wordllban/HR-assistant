@@ -8,7 +8,7 @@ import {
   type StreamChunk,
   type UIMessage,
 } from '@tanstack/ai'
-import { config, hasApiKey } from '#/lib/config'
+import { config, hasApiKey, resolveChatModel } from '#/lib/config'
 import { chatAdapter } from '#/lib/openrouter'
 import { retrieve } from '#/lib/retrieval'
 import { applyFloor, buildGroundedMessages, toCitations } from '#/lib/grounding'
@@ -54,7 +54,10 @@ export const Route = createFileRoute('/api/chat')({
           )
         }
 
-        const { messages } = await chatParamsFromRequest(request)
+        const { messages, forwardedProps } = await chatParamsFromRequest(request)
+
+        // The picker's choice arrives as untrusted client data — clamp it to the allowlist.
+        const model = resolveChatModel(forwardedProps?.model)
 
         const lastUser = [...messages].reverse().find((message) => message.role === 'user')
         const question = lastUser ? messageText(lastUser) : ''
@@ -64,7 +67,7 @@ export const Route = createFileRoute('/api/chat')({
         const citations = toCitations(chunks)
 
         logger.info(
-          { question, retrieved: retrieved.length, kept: chunks.length, inScope },
+          { question, model, retrieved: retrieved.length, kept: chunks.length, inScope },
           'grounded chat',
         )
 
@@ -78,7 +81,7 @@ export const Route = createFileRoute('/api/chat')({
           .filter((message) => message.role === 'user')
           .map((message) => ({ role: 'user', content: message.content }))
 
-        const stream = chat({ adapter: chatAdapter(), systemPrompts, messages: userMessages })
+        const stream = chat({ adapter: chatAdapter(model), systemPrompts, messages: userMessages })
 
         // Wrap the model stream so the citations follow as a trailing CUSTOM frame
         // (consumed client-side via useChat's onCustomEvent).
