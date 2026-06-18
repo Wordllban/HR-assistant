@@ -1,0 +1,24 @@
+# Local dev stack. For #1 (walking skeleton) this provides the persistent pgvector DB;
+# run the app with `pnpm dev` and migrations with `pnpm db:migrate`.
+# The one-shot migrate-seed init service + the app service are added in later issues
+# (#2 seed, #7 Dockerfile) so `docker compose up` becomes a single-command full stack.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hr_assistant
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d hr_assistant']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
