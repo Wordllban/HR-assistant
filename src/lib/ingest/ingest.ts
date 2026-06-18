@@ -92,7 +92,7 @@ async function ingestOne(source: IngestSource): Promise<IngestResult> {
   // Embed everything BEFORE any write, so a failure never leaves partial chunks.
   let vectors: number[][]
   try {
-    vectors = await embedAll(pieces.map((p) => p.content))
+    vectors = await embedAll(pieces.map((piece) => piece.content))
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     log.error({ err: message }, 'embedding failed — marking document failed')
@@ -114,12 +114,12 @@ async function ingestOne(source: IngestSource): Promise<IngestResult> {
       .returning({ id: documents.id })
 
     await tx.insert(chunksTable).values(
-      pieces.map((piece, i) => ({
+      pieces.map((piece, index) => ({
         documentId: doc.id,
         chunkIndex: piece.chunkIndex,
         content: piece.content,
         page: piece.page,
-        embedding: vectors[i],
+        embedding: vectors[index],
       })),
     )
   })
@@ -131,8 +131,8 @@ async function ingestOne(source: IngestSource): Promise<IngestResult> {
 /** Embed all texts in batches, with bounded exponential-backoff retry per batch. */
 async function embedAll(texts: string[]): Promise<number[][]> {
   const out: number[][] = []
-  for (let i = 0; i < texts.length; i += EMBED_BATCH_SIZE) {
-    const batch = texts.slice(i, i + EMBED_BATCH_SIZE)
+  for (let index = 0; index < texts.length; index += EMBED_BATCH_SIZE) {
+    const batch = texts.slice(index, index + EMBED_BATCH_SIZE)
     out.push(...(await embedWithRetry(batch)))
   }
   return out

@@ -21,18 +21,18 @@ export function Composer({ onSend, onStop, disabled, isLoading }: ComposerProps)
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault()
+      onSubmit={(event) => {
+        event.preventDefault()
         submit()
       }}
       className="flex items-end gap-2"
     >
       <Textarea
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault()
+        onChange={(event) => setValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault()
             submit()
           }
         }}

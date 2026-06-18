@@ -53,12 +53,12 @@ export async function retrieve(
     LIMIT ${topK}
   `
 
-  return rows.map((r) => ({
-    documentId: r.document_id,
-    documentName: r.document_name,
-    chunkIndex: r.chunk_index,
-    page: r.page,
-    content: r.content,
-    score: Number(r.score),
+  return rows.map((row) => ({
+    documentId: row.document_id,
+    documentName: row.document_name,
+    chunkIndex: row.chunk_index,
+    page: row.page,
+    content: row.content,
+    score: Number(row.score),
   }))
 }

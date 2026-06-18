@@ -44,20 +44,20 @@ describe('chunkText', () => {
 
   it('numbers chunks sequentially from 0', () => {
     const out = chunkText(paragraphs(12, 40), null, opts)
-    expect(out.map((c) => c.chunkIndex)).toEqual(out.map((_, i) => i))
+    expect(out.map((chunk) => chunk.chunkIndex)).toEqual(out.map((_, index) => index))
   })
 
   it('overlaps consecutive chunks when overlap > 0', () => {
     // Distinct paragraphs so we can detect shared content across the boundary.
-    const text = Array.from({ length: 10 }, (_, p) =>
-      Array.from({ length: 20 }, (_, w) => `p${p}w${w}`).join(' '),
+    const text = Array.from({ length: 10 }, (_, paragraphIndex) =>
+      Array.from({ length: 20 }, (_, wordIndex) => `p${paragraphIndex}w${wordIndex}`).join(' '),
     ).join('\n\n')
     const out = chunkText(text, null, { maxTokens: 40, overlap: 0.3 })
     expect(out.length).toBeGreaterThan(1)
 
     const tail = out[0].content.split(/\s+/).slice(-3)
     // At least one of the previous chunk's trailing tokens reappears in the next chunk.
-    expect(tail.some((tok) => out[1].content.includes(tok))).toBe(true)
+    expect(tail.some((token) => out[1].content.includes(token))).toBe(true)
   })
 
   it('produces no overlap when overlap = 0', () => {
@@ -91,14 +91,14 @@ describe('chunkText page provenance', () => {
       expect(chunk.page).toBeGreaterThanOrEqual(1)
       expect(chunk.page).toBeLessThanOrEqual(3)
     }
-    const pages = out.map((c) => c.page!)
-    expect(pages).toEqual([...pages].sort((a, b) => a - b))
+    const pages = out.map((chunk) => chunk.page!)
+    expect(pages).toEqual([...pages].sort((first, second) => first - second))
     // All three pages should be represented given the volume of text.
     expect(new Set(pages)).toEqual(new Set([1, 2, 3]))
   })
 
   it('assigns null pages when no boundary map is given', () => {
     const out = chunkText(paragraphs(8, 30), null, { maxTokens: 50, overlap: 0.15 })
-    expect(out.every((c) => c.page === null)).toBe(true)
+    expect(out.every((chunk) => chunk.page === null)).toBe(true)
   })
 })

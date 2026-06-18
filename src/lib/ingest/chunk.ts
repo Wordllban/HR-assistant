@@ -60,8 +60,8 @@ export function chunkText(
   const segments = splitToSegments(text, 0, maxTokens, SEPARATORS)
   const packed = packSegments(segments, maxTokens, overlapTokens)
 
-  return packed.map((chunk, i) => ({
-    chunkIndex: i,
+  return packed.map((chunk, index) => ({
+    chunkIndex: index,
     content: chunk.text,
     page: pageBoundaries ? pageForOffset(chunk.start, pageBoundaries) : null,
   }))
@@ -103,7 +103,7 @@ function splitToSegments(
  */
 function splitKeepingOffsets(text: string, separator: string, baseOffset: number): Segment[] {
   if (separator === '') {
-    return Array.from(text, (ch, i) => ({ text: ch, start: baseOffset + i }))
+    return Array.from(text, (char, index) => ({ text: char, start: baseOffset + index }))
   }
   const parts: Segment[] = []
   let start = 0
@@ -122,10 +122,10 @@ function hardSplit(text: string, baseOffset: number, maxTokens: number): Segment
   const tokens = encode(text)
   const segments: Segment[] = []
   let charCursor = 0
-  for (let i = 0; i < tokens.length; i += maxTokens) {
+  for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += maxTokens) {
     // Decode this window via a character-proportional slice. BPE doesn't expose char
     // spans, so approximate: this fallback is for pathological input only.
-    const fraction = (i + maxTokens) / tokens.length
+    const fraction = (tokenIndex + maxTokens) / tokens.length
     const end = Math.min(text.length, Math.round(text.length * fraction))
     const piece = text.slice(charCursor, end)
     if (piece.trim().length > 0) segments.push({ text: piece, start: baseOffset + charCursor })
@@ -149,7 +149,7 @@ function packSegments(
     if (currentTokens + segTokens > maxTokens && current.length > 0) {
       chunks.push(mergeSegments(current))
       current = overlapTokens > 0 ? takeOverlap(current, overlapTokens) : []
-      currentTokens = current.reduce((sum, s) => sum + countTokens(s.text), 0)
+      currentTokens = current.reduce((sum, segment) => sum + countTokens(segment.text), 0)
     }
     current.push(segment)
     currentTokens += segTokens
@@ -163,9 +163,9 @@ function packSegments(
 function takeOverlap(segments: Segment[], overlapTokens: number): Segment[] {
   const overlap: Segment[] = []
   let tokens = 0
-  for (let i = segments.length - 1; i >= 1; i--) {
-    overlap.unshift(segments[i])
-    tokens += countTokens(segments[i].text)
+  for (let index = segments.length - 1; index >= 1; index--) {
+    overlap.unshift(segments[index])
+    tokens += countTokens(segments[index].text)
     if (tokens >= overlapTokens) break
   }
   return overlap
@@ -174,7 +174,7 @@ function takeOverlap(segments: Segment[], overlapTokens: number): Segment[] {
 /** Concatenate segments into one chunk; start = first segment's offset. */
 function mergeSegments(segments: Segment[]): Segment {
   return {
-    text: segments.map((s) => s.text).join('').trim(),
+    text: segments.map((segment) => segment.text).join('').trim(),
     start: segments[0].start,
   }
 }
@@ -182,8 +182,8 @@ function mergeSegments(segments: Segment[]): Segment {
 /** Largest page whose start offset is ≤ `offset`; returns a 1-based page number. */
 function pageForOffset(offset: number, pageBoundaries: number[]): number {
   let page = 1
-  for (let i = 0; i < pageBoundaries.length; i++) {
-    if (pageBoundaries[i] <= offset) page = i + 1
+  for (let index = 0; index < pageBoundaries.length; index++) {
+    if (pageBoundaries[index] <= offset) page = index + 1
     else break
   }
   return page

@@ -21,7 +21,7 @@ async function main() {
     )`
 
     const dir = path.join(process.cwd(), 'drizzle')
-    const files = (await readdir(dir)).filter((f) => f.endsWith('.sql')).sort()
+    const files = (await readdir(dir)).filter((file) => file.endsWith('.sql')).sort()
 
     for (const file of files) {
       const [{ exists }] = await sql<{ exists: boolean }[]>`

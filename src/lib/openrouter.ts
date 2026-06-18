@@ -50,8 +50,8 @@ export async function embedTexts(
   const json = (await res.json()) as { data: Array<{ embedding: number[]; index: number }> }
   return json.data
     .slice()
-    .sort((a, b) => a.index - b.index)
-    .map((d) => d.embedding)
+    .sort((first, second) => first.index - second.index)
+    .map((item) => item.embedding)
 }
 
 /** Embed a single text and return its vector. */
