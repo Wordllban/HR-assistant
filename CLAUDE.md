@@ -27,6 +27,13 @@ pnpm generate-routes  # regenerate route tree
 - Entry: `src/router.tsx` (`getRouter()`), root shell in `src/routes/__root.tsx`
 - Generated: `src/routeTree.gen.ts` (do not edit manually)
 
+## Code style
+
+- **No single-character identifiers.** Name variables, callback parameters, and loop
+  bindings descriptively (`chunk`, `row`, `message`, `index`) — never `c`, `r`, `m`, `i`.
+  This applies to lambdas (`.map((chunk) => …)`), `for…of` bindings, and destructuring.
+  SQL table aliases inside raw query strings are exempt (standard SQL convention).
+
 ## TanStack Intent
 
 Before substantial router/Start/devtools work, load relevant skills:

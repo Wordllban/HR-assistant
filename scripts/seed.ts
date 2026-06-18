@@ -17,7 +17,7 @@ const CORPUS_DIR = path.join(process.cwd(), 'corpus')
 const TEXT_EXTENSIONS = new Set(['.txt', '.md'])
 
 async function main() {
-  const entries = (await readdir(CORPUS_DIR)).filter((f) => !f.startsWith('.')).sort()
+  const entries = (await readdir(CORPUS_DIR)).filter((file) => !file.startsWith('.')).sort()
   if (entries.length === 0) {
     logger.warn({ dir: CORPUS_DIR }, 'corpus is empty — nothing to seed')
     return
@@ -40,17 +40,17 @@ async function main() {
   const results = await ingest(sources)
 
   const totals = results.reduce(
-    (acc, r) => {
-      acc[r.status] += 1
-      acc.chunks += r.chunks
+    (acc, result) => {
+      acc[result.status] += 1
+      acc.chunks += result.chunks
       return acc
     },
     { ready: 0, skipped: 0, failed: 0, chunks: 0 },
   )
 
-  for (const r of results) {
-    const line = `${r.status.padEnd(7)} ${r.name}${r.chunks ? ` (${r.chunks} chunks)` : ''}`
-    if (r.status === 'failed') logger.error({ err: r.error }, line)
+  for (const result of results) {
+    const line = `${result.status.padEnd(7)} ${result.name}${result.chunks ? ` (${result.chunks} chunks)` : ''}`
+    if (result.status === 'failed') logger.error({ err: result.error }, line)
     else logger.info(line)
   }
   logger.info(totals, 'seed complete')

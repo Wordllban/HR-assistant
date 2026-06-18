@@ -1,6 +1,8 @@
 import type { UIMessage } from '@tanstack/ai'
+import type { Citation } from '@/lib/citation'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { Citations } from './Citations'
 
 /** Concatenate the text parts of a message into a single string. */
 function messageText(message: UIMessage): string {
@@ -13,9 +15,11 @@ function messageText(message: UIMessage): string {
 interface MessageListProps {
   messages: Array<UIMessage>
   isLoading: boolean
+  /** Citations keyed by assistant message id, attached once a run finishes. */
+  citationsByMessage: Record<string, Array<Citation>>
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+export function MessageList({ messages, isLoading, citationsByMessage }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-center text-sm text-muted-foreground">
@@ -29,6 +33,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
       <div className="flex flex-col gap-4 py-2">
         {messages.map((message) => {
           const isUser = message.role === 'user'
+          const citations = citationsByMessage[message.id] ?? []
           return (
             <div key={message.id} className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
               <div
@@ -40,6 +45,7 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
                 )}
               >
                 <p className="m-0 whitespace-pre-wrap">{messageText(message)}</p>
+                {!isUser && <Citations citations={citations} />}
               </div>
             </div>
           )
