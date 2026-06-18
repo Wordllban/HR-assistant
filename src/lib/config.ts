@@ -17,7 +17,10 @@ function num(key: string, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-const defaultChatModel = str('DEFAULT_CHAT_MODEL', 'meta-llama/llama-3.3-70b-instruct:free')
+// gpt-oss-120b:free is a strong, instruction-following free model that is actually
+// serving (the older llama-3.3-70b:free free endpoint is frequently rate-limited
+// upstream). Swap via DEFAULT_CHAT_MODEL on release (DECISIONS.md §1, §3, §15).
+const defaultChatModel = str('DEFAULT_CHAT_MODEL', 'openai/gpt-oss-120b:free')
 
 export const config = {
   openRouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
@@ -61,10 +64,11 @@ export interface ChatModelOption {
 }
 
 export const CHAT_MODELS: ChatModelOption[] = [
+  { id: 'openai/gpt-oss-120b:free', label: 'GPT-OSS 120B (free)', tier: 'free' },
+  { id: 'openai/gpt-oss-20b:free', label: 'GPT-OSS 20B (free)', tier: 'free' },
   { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B (free)', tier: 'free' },
-  { id: 'google/gemma-2-9b-it:free', label: 'Gemma 2 9B (free)', tier: 'free' },
-  { id: 'qwen/qwen-2.5-72b-instruct:free', label: 'Qwen 2.5 72B (free)', tier: 'free' },
-  { id: 'deepseek/deepseek-chat:free', label: 'DeepSeek Chat (free)', tier: 'free' },
+  { id: 'qwen/qwen3-next-80b-a3b-instruct:free', label: 'Qwen3 Next 80B (free)', tier: 'free' },
+  { id: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'Nemotron 3 Super 120B (free)', tier: 'free' },
   { id: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6', tier: 'premium' },
   { id: 'openai/gpt-5', label: 'GPT-5', tier: 'premium' },
   { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro', tier: 'premium' },
