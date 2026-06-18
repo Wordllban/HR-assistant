@@ -1,7 +1,7 @@
-# Local dev stack. For #1 (walking skeleton) this provides the persistent pgvector DB;
-# run the app with `pnpm dev` and migrations with `pnpm db:migrate`.
-# The one-shot migrate-seed init service + the app service are added in later issues
-# (#2 seed, #7 Dockerfile) so `docker compose up` becomes a single-command full stack.
+# Local stack. `db` is the persistent pgvector store; `migrate-seed` is the one-off init
+# job that runs migrations then seeds the bundled corpus before serving (DECISIONS.md §9).
+# Idempotent: a second `docker compose up` re-applies nothing and is effectively instant.
+# The `app` service (which `depends_on` migrate-seed completing) is added in #7.
 
 services:
   db:
@@ -19,6 +19,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # One-off: migrate the schema, then seed the corpus. Exits 0 when the index is ready.
+  migrate-seed:
+    build: .
+    command: ['sh', '-c', 'pnpm db:migrate && pnpm seed']
+    # OPENROUTER_API_KEY (required by seed embeddings) comes from .env; optional so a
+    # fresh checkout without .env still parses (the job then fails fast on a missing key).
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Reach the db over the compose network, not localhost.
+      DATABASE_URL: postgres://postgres:postgres@db:5432/hr_assistant
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
 
 volumes:
   pgdata:
