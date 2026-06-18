@@ -1,14 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ChatPanel } from '#/components/chat/ChatPanel'
+import { KnowledgeBasePanel } from '#/components/chat/KnowledgeBasePanel'
 import { getReadiness } from '#/server/readiness'
+import { listDocuments } from '#/server/documents'
 
 export const Route = createFileRoute('/')({
-  loader: async () => getReadiness(),
+  loader: async () => {
+    const [readiness, documents] = await Promise.all([getReadiness(), listDocuments()])
+    return { ...readiness, documents }
+  },
   component: Home,
 })
 
 function Home() {
-  const { hasKey } = Route.useLoaderData()
+  const { hasKey, documents } = Route.useLoaderData()
 
   return (
     <main className="page-wrap px-4 pb-8 pt-14">
@@ -18,7 +23,13 @@ function Home() {
           Ask about your HR policies
         </h1>
       </div>
-      <ChatPanel hasKey={hasKey} />
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
+        <ChatPanel hasKey={hasKey} />
+        <aside className="hidden lg:block">
+          <KnowledgeBasePanel documents={documents} />
+        </aside>
+      </div>
     </main>
   )
 }

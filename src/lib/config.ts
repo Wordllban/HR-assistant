@@ -4,6 +4,7 @@
  *
  * Server-only: reads process.env. Do not import into client-only modules.
  */
+import { CHAT_MODELS } from '#/lib/models'
 
 function str(key: string, fallback: string): string {
   const value = process.env[key]
@@ -54,22 +55,13 @@ export function hasApiKey(): boolean {
 }
 
 /**
- * Models surfaced in the in-UI picker. `free` models work on a $0 key; `premium`
- * ones require OpenRouter credit and are marked as such in the UI (DECISIONS.md §15).
+ * Resolve a client-supplied model id to a model we will actually call. The picker
+ * lets users choose, but the wire value is untrusted — anything not in `CHAT_MODELS`
+ * (a garbage slug, an arbitrary model the client tried to smuggle in, a non-string)
+ * falls back to the configured default. This is the allowlist guard for the chat route.
  */
-export interface ChatModelOption {
-  id: string
-  label: string
-  tier: 'free' | 'premium'
+export function resolveChatModel(requested: unknown): string {
+  return CHAT_MODELS.some((model) => model.id === requested)
+    ? (requested as string)
+    : config.defaultChatModel
 }
-
-export const CHAT_MODELS: ChatModelOption[] = [
-  { id: 'openai/gpt-oss-120b:free', label: 'GPT-OSS 120B (free)', tier: 'free' },
-  { id: 'openai/gpt-oss-20b:free', label: 'GPT-OSS 20B (free)', tier: 'free' },
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B (free)', tier: 'free' },
-  { id: 'qwen/qwen3-next-80b-a3b-instruct:free', label: 'Qwen3 Next 80B (free)', tier: 'free' },
-  { id: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'Nemotron 3 Super 120B (free)', tier: 'free' },
-  { id: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6', tier: 'premium' },
-  { id: 'openai/gpt-5', label: 'GPT-5', tier: 'premium' },
-  { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro', tier: 'premium' },
-]

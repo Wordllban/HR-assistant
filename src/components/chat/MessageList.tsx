@@ -20,14 +20,6 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages, isLoading, citationsByMessage }: MessageListProps) {
-  if (messages.length === 0) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-center text-sm text-muted-foreground">
-        <p className="max-w-sm">Ask a question to get started.</p>
-      </div>
-    )
-  }
-
   return (
     <ScrollArea className="min-h-0 flex-1 pr-3">
       <div className="flex flex-col gap-4 py-2">
