@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
 import type { UIMessage } from '@tanstack/ai'
 import { AlertTriangle } from 'lucide-react'
-import type { Citation } from '@/lib/citation'
+import type { Citation, MessageMeta } from '@/lib/citation'
 import { CHAT_MODELS } from '@/lib/models'
 import { Card } from '@/components/ui/card'
 import { Composer } from './Composer'
@@ -36,9 +36,11 @@ export function ChatPanel({ hasKey }: ChatPanelProps) {
   const [citationsByMessage, setCitationsByMessage] = useState<
     Record<string, Array<Citation>>
   >({})
-  // Citations arrive as a trailing CUSTOM event before the run's terminal frame, with no
-  // message id of their own — stash them, then bind to the assistant message in onFinish.
+  const [metaByMessage, setMetaByMessage] = useState<Record<string, MessageMeta>>({})
+  // Citations and the usage readout arrive as trailing CUSTOM events with no message id of
+  // their own — stash them, then bind to the assistant message in onFinish.
   const pendingCitations = useRef<Array<Citation>>([])
+  const pendingMeta = useRef<MessageMeta | undefined>(undefined)
 
   // `body` is spread into the AG-UI forwardedProps the chat route reads (and clamps to
   // the allowlist). Created once so the client instance — and its messages — persist.
@@ -51,12 +53,17 @@ export function ChatPanel({ hasKey }: ChatPanelProps) {
     onCustomEvent: (eventType, data) => {
       if (eventType === 'citations') {
         pendingCitations.current = (data as Array<Citation>) ?? []
+      } else if (eventType === 'usage') {
+        pendingMeta.current = data as MessageMeta
       }
     },
     onFinish: (message: UIMessage) => {
       const citations = pendingCitations.current
+      const meta = pendingMeta.current
       pendingCitations.current = []
+      pendingMeta.current = undefined
       setCitationsByMessage((prev) => ({ ...prev, [message.id]: citations }))
+      if (meta) setMetaByMessage((prev) => ({ ...prev, [message.id]: meta }))
     },
   })
 
@@ -84,6 +91,7 @@ export function ChatPanel({ hasKey }: ChatPanelProps) {
           messages={messages}
           isLoading={isLoading}
           citationsByMessage={citationsByMessage}
+          metaByMessage={metaByMessage}
         />
       )}
 

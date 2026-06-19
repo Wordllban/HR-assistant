@@ -1,8 +1,9 @@
 import type { UIMessage } from '@tanstack/ai'
-import type { Citation } from '@/lib/citation'
+import type { Citation, MessageMeta as MessageMetaData } from '@/lib/citation'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { Citations } from './Citations'
+import { MessageMeta } from './MessageMeta'
 
 /** Concatenate the text parts of a message into a single string. */
 function messageText(message: UIMessage): string {
@@ -17,15 +18,23 @@ interface MessageListProps {
   isLoading: boolean
   /** Citations keyed by assistant message id, attached once a run finishes. */
   citationsByMessage: Record<string, Array<Citation>>
+  /** Per-message token/latency readout keyed by assistant message id. */
+  metaByMessage: Record<string, MessageMetaData>
 }
 
-export function MessageList({ messages, isLoading, citationsByMessage }: MessageListProps) {
+export function MessageList({
+  messages,
+  isLoading,
+  citationsByMessage,
+  metaByMessage,
+}: MessageListProps) {
   return (
     <ScrollArea className="min-h-0 flex-1 pr-3">
       <div className="flex flex-col gap-4 py-2">
         {messages.map((message) => {
           const isUser = message.role === 'user'
           const citations = citationsByMessage[message.id] ?? []
+          const meta = metaByMessage[message.id]
           return (
             <div key={message.id} className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
               <div
@@ -38,6 +47,7 @@ export function MessageList({ messages, isLoading, citationsByMessage }: Message
               >
                 <p className="m-0 whitespace-pre-wrap">{messageText(message)}</p>
                 {!isUser && <Citations citations={citations} />}
+                {!isUser && <MessageMeta meta={meta} />}
               </div>
             </div>
           )

@@ -11,3 +11,15 @@ export interface Citation {
   /** Cosine similarity of the backing chunk, in [0, 1]. */
   score: number
 }
+
+/**
+ * Per-message observability readout (#6), delivered as a trailing `usage` CUSTOM event.
+ * Token counts are optional because a provider may not report usage on the final frame.
+ */
+export interface MessageMeta {
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  /** End-to-end turn latency in milliseconds (retrieval + generation). */
+  latencyMs: number
+}

@@ -20,12 +20,15 @@ export interface RetrievedChunk {
   score: number
 }
 
-/** Retrieve the `topK` chunks most similar to `query`, highest score first. */
-export async function retrieve(
-  query: string,
+/**
+ * Search the index for the `topK` chunks most similar to an already-embedded query
+ * vector, highest score first. Split out from `retrieve` so callers that need per-stage
+ * latency (the chat route, #6) can time embedding and the index search separately.
+ */
+export async function searchChunks(
+  vector: number[],
   topK: number = config.retrievalTopK,
 ): Promise<RetrievedChunk[]> {
-  const vector = await embedText(query)
   const literal = `[${vector.join(',')}]`
 
   // `<=>` is pgvector cosine distance; similarity = 1 - distance. Ordering by the raw
@@ -61,4 +64,13 @@ export async function retrieve(
     content: row.content,
     score: Number(row.score),
   }))
+}
+
+/** Embed `query` with the ingest-time model, then return the `topK` most similar chunks. */
+export async function retrieve(
+  query: string,
+  topK: number = config.retrievalTopK,
+): Promise<RetrievedChunk[]> {
+  const vector = await embedText(query)
+  return searchChunks(vector, topK)
 }
