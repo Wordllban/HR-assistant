@@ -9,9 +9,10 @@ import {
   type UIMessage,
 } from '@tanstack/ai'
 import { config, hasApiKey, resolveChatModel } from '#/lib/config'
-import { chatAdapter } from '#/lib/openrouter'
+import { chatAdapter, complete } from '#/lib/openrouter'
 import { retrieve } from '#/lib/retrieval'
 import { applyFloor, buildGroundedMessages, toCitations } from '#/lib/grounding'
+import { buildCondensePrompt, condenseQuery, type ConversationTurn } from '#/lib/condense'
 import { logger } from '#/lib/logger'
 
 /** Plain text of a message, whether it arrives as a UIMessage (parts) or ModelMessage. */
@@ -39,6 +40,12 @@ function messageText(message: UIMessage | ModelMessage): string {
  * floor (the off-corpus guardrail) → build a grounded prompt that answers only from the
  * retrieved context. The answer streams as normal AG-UI text events; the citations backing
  * it ride out as a trailing `citations` CUSTOM event the client renders as source cards.
+ *
+ * Conversational condensation (#5): when prior history exists, a single free-model call
+ * rewrites the follow-up + a capped history window into a standalone query, which is what
+ * we embed and retrieve on — so "what about part-time employees?" finds the right chunks.
+ * The first message has no history and skips this. Generation still answers the user's
+ * actual question; only retrieval uses the rewritten query.
  */
 export const Route = createFileRoute('/api/chat')({
   server: {
@@ -59,15 +66,53 @@ export const Route = createFileRoute('/api/chat')({
         // The picker's choice arrives as untrusted client data — clamp it to the allowlist.
         const model = resolveChatModel(forwardedProps?.model)
 
-        const lastUser = [...messages].reverse().find((message) => message.role === 'user')
-        const question = lastUser ? messageText(lastUser) : ''
+        let lastUserIndex = -1
+        for (let index = messages.length - 1; index >= 0; index--) {
+          if (messages[index].role === 'user') {
+            lastUserIndex = index
+            break
+          }
+        }
+        const question = lastUserIndex >= 0 ? messageText(messages[lastUserIndex]) : ''
 
-        const retrieved = await retrieve(question)
+        // Everything before the current question is the conversation history fed to
+        // condensation (free model, independent of the picker). A failed rewrite must not
+        // sink the whole turn, so fall back to retrieving on the bare question.
+        const history: ConversationTurn[] = messages
+          .slice(0, Math.max(0, lastUserIndex))
+          .filter((message) => message.role === 'user' || message.role === 'assistant')
+          .map((message) => ({
+            role: message.role === 'user' ? 'user' : 'assistant',
+            content: messageText(message),
+          }))
+
+        let retrievalQuery = question
+        try {
+          retrievalQuery = await condenseQuery(history, question, (windowed, followUp) =>
+            complete(buildCondensePrompt(windowed, followUp), config.condenseModel),
+          )
+        } catch (err) {
+          logger.warn(
+            { err: err instanceof Error ? err.message : String(err) },
+            'condensation failed — retrieving on the raw question',
+          )
+        }
+
+        const retrieved = await retrieve(retrievalQuery)
         const { inScope, chunks } = applyFloor(retrieved, config.retrievalMinScore)
         const citations = toCitations(chunks)
 
         logger.info(
-          { question, model, retrieved: retrieved.length, kept: chunks.length, inScope },
+          {
+            question,
+            retrievalQuery,
+            condensed: history.length > 0 && retrievalQuery !== question,
+            historyTurns: history.length,
+            model,
+            retrieved: retrieved.length,
+            kept: chunks.length,
+            inScope,
+          },
           'grounded chat',
         )
 

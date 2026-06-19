@@ -43,7 +43,10 @@ export const config = {
   retrievalMinScore: num('RETRIEVAL_MIN_SCORE', 0.2),
   chunkSize: num('CHUNK_SIZE', 600),
   chunkOverlap: num('CHUNK_OVERLAP', 0.15),
+  // Condensation history caps (DECISIONS.md §6): last N turns AND a replayed-token ceiling,
+  // both protecting free-tier quota. Older turns are dropped first when over the token cap.
   historyWindow: num('HISTORY_WINDOW', 3),
+  condenseMaxHistoryTokens: num('CONDENSE_MAX_HISTORY_TOKENS', 800),
 
   // OpenRouter attribution headers (shown on their dashboard).
   appTitle: 'HR Assistant',

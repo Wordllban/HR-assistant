@@ -23,6 +23,43 @@ export function chatAdapter(model: string = config.defaultChatModel) {
 }
 
 /**
+ * One-shot, non-streaming chat completion (used by query condensation, DECISIONS.md §6).
+ * The streaming adapter is for the user-facing answer; this is a short, deterministic
+ * single-call rewrite, so a plain OpenAI-compatible fetch is simpler. Temperature 0 for a
+ * stable rewrite; capped output tokens since a standalone question is short.
+ */
+export async function complete(
+  prompt: string,
+  model: string = config.defaultChatModel,
+  maxTokens = 256,
+): Promise<string> {
+  const res = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.openRouterApiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': config.appUrl,
+      'X-Title': config.appTitle,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0,
+      max_tokens: maxTokens,
+    }),
+  })
+
+  if (!res.ok) {
+    throw new Error(`Completion request failed (${res.status}): ${await res.text()}`)
+  }
+
+  const json = (await res.json()) as {
+    choices: Array<{ message: { content: string | null } }>
+  }
+  return json.choices[0]?.message?.content ?? ''
+}
+
+/**
  * Embed one or more texts in a single batched request (DECISIONS.md §4). Returns one
  * vector per input, in order.
  */
