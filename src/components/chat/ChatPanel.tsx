@@ -37,9 +37,13 @@ export function ChatPanel({ hasKey }: ChatPanelProps) {
     Record<string, Array<Citation>>
   >({})
   const [metaByMessage, setMetaByMessage] = useState<Record<string, MessageMeta>>({})
-  // Citations and the usage readout arrive as trailing CUSTOM events with no message id of
-  // their own — stash them, then bind to the assistant message in onFinish.
-  const pendingCitations = useRef<Array<Citation>>([])
+  // Citations and the usage readout ride out as trailing CUSTOM events with no message id of
+  // their own. By design they arrive AFTER the run's RUN_FINISHED, which is exactly when
+  // useChat fires onFinish — so onFinish has already run by the time they land. We capture
+  // the finished assistant message's id there and bind each trailer to it as it arrives. The
+  // pending refs are the fallback for the reverse order, should a trailer ever beat onFinish.
+  const lastAssistantId = useRef<string | undefined>(undefined)
+  const pendingCitations = useRef<Array<Citation> | undefined>(undefined)
   const pendingMeta = useRef<MessageMeta | undefined>(undefined)
 
   // `body` is spread into the AG-UI forwardedProps the chat route reads (and clamps to
@@ -52,22 +56,45 @@ export function ChatPanel({ hasKey }: ChatPanelProps) {
     connection,
     onCustomEvent: (eventType, data) => {
       if (eventType === 'citations') {
-        pendingCitations.current = (data as Array<Citation>) ?? []
+        const citations = (data as Array<Citation>) ?? []
+        if (lastAssistantId.current) {
+          const messageId = lastAssistantId.current
+          setCitationsByMessage((prev) => ({ ...prev, [messageId]: citations }))
+        } else {
+          pendingCitations.current = citations
+        }
       } else if (eventType === 'usage') {
-        pendingMeta.current = data as MessageMeta
+        const meta = data as MessageMeta
+        if (lastAssistantId.current) {
+          const messageId = lastAssistantId.current
+          setMetaByMessage((prev) => ({ ...prev, [messageId]: meta }))
+        } else {
+          pendingMeta.current = meta
+        }
       }
     },
     onFinish: (message: UIMessage) => {
-      const citations = pendingCitations.current
-      const meta = pendingMeta.current
-      pendingCitations.current = []
-      pendingMeta.current = undefined
-      setCitationsByMessage((prev) => ({ ...prev, [message.id]: citations }))
-      if (meta) setMetaByMessage((prev) => ({ ...prev, [message.id]: meta }))
+      lastAssistantId.current = message.id
+      // Fallback: bind anything that somehow arrived before this turn's onFinish.
+      if (pendingCitations.current) {
+        const citations = pendingCitations.current
+        pendingCitations.current = undefined
+        setCitationsByMessage((prev) => ({ ...prev, [message.id]: citations }))
+      }
+      if (pendingMeta.current) {
+        const meta = pendingMeta.current
+        pendingMeta.current = undefined
+        setMetaByMessage((prev) => ({ ...prev, [message.id]: meta }))
+      }
     },
   })
 
   function send(text: string) {
+    // A fresh turn: forget the previous assistant id so trailers can't bind to it before
+    // this turn's onFinish captures the new one.
+    lastAssistantId.current = undefined
+    pendingCitations.current = undefined
+    pendingMeta.current = undefined
     void sendMessage(text)
   }
 

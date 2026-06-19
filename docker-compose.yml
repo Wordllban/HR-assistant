@@ -1,7 +1,9 @@
-# Local stack. `db` is the persistent pgvector store; `migrate-seed` is the one-off init
-# job that runs migrations then seeds the bundled corpus before serving (DECISIONS.md §9).
+# Local stack (DECISIONS.md §9):
+#   db           — persistent pgvector store
+#   migrate-seed — one-off init job: migrations + corpus seed, then exits 0
+#   app          — stateless serving, starts only after migrate-seed completes successfully
 # Idempotent: a second `docker compose up` re-applies nothing and is effectively instant.
-# The `app` service (which `depends_on` migrate-seed completing) is added in #7.
+# All three share one image (built once); the app overrides the image's default CMD.
 
 services:
   db:
@@ -36,6 +38,24 @@ services:
       db:
         condition: service_healthy
     restart: 'no'
+
+  # Stateless serving: srvx serves the Vite build (fetch handler + client assets). Reads the
+  # vector store only — never seeds. Waits for the one-off init to finish before accepting traffic.
+  app:
+    build: .
+    command: ['pnpm', 'start']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/hr_assistant
+      PORT: '3000'
+    ports:
+      - '3000:3000'
+    depends_on:
+      migrate-seed:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
 volumes:
   pgdata:
