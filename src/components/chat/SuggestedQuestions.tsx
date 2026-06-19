@@ -1,4 +1,4 @@
-import { ArrowUpRight, Sparkles } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { SUGGESTED_QUESTIONS } from '@/lib/suggested-questions'
 
 interface SuggestedQuestionsProps {
@@ -9,27 +9,33 @@ interface SuggestedQuestionsProps {
 /** Clickable starter prompts for the empty state; picking one sends it. */
 export function SuggestedQuestions({ onPick, disabled }: SuggestedQuestionsProps) {
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-3 text-center">
-      <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <Sparkles className="size-5" />
-      </span>
-      <div>
-        <p className="m-0 text-sm font-medium">Ask about your HR policies</p>
-        <p className="m-0 text-xs text-muted-foreground">
-          Grounded answers with citations from the knowledge base.
-        </p>
+    <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-6 text-center">
+      <div className="flex flex-col items-center gap-3">
+        <span className="brand-mark flex size-12 items-center justify-center rounded-2xl">
+          <span className="size-4 rotate-45 rounded-[3px] bg-white/90" />
+        </span>
+        <div>
+          <h2 className="m-0 text-xl font-bold tracking-tight text-[var(--sea-ink)]">
+            How can I help with HR?
+          </h2>
+          <p className="m-0 mt-1.5 text-sm text-muted-foreground">
+            Ask anything about company policies — every answer is grounded in your knowledge
+            base and cites its sources.
+          </p>
+        </div>
       </div>
-      <ul className="m-0 flex w-full list-none flex-col gap-1.5 p-0">
+
+      <ul className="m-0 grid w-full list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
         {SUGGESTED_QUESTIONS.map((question) => (
           <li key={question}>
             <button
               type="button"
               disabled={disabled}
               onClick={() => onPick(question)}
-              className="group flex w-full items-center gap-2 rounded-lg border bg-card px-3 py-2 text-left text-xs transition hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              className="group flex h-full w-full items-center gap-2 rounded-xl border border-border bg-card/70 px-3.5 py-3 text-left text-sm text-[var(--sea-ink)] shadow-sm transition hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="flex-1">{question}</span>
-              <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground transition group-hover:text-primary" />
+              <span className="flex-1 leading-snug">{question}</span>
+              <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
             </button>
           </li>
         ))}

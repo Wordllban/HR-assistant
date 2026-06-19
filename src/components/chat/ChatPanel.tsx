@@ -4,7 +4,6 @@ import type { UIMessage } from '@tanstack/ai'
 import { AlertTriangle } from 'lucide-react'
 import type { Citation, MessageMeta } from '@/lib/citation'
 import { CHAT_MODELS } from '@/lib/models'
-import { Card } from '@/components/ui/card'
 import { Composer } from './Composer'
 import { MessageList } from './MessageList'
 import { ModelPicker } from './ModelPicker'
@@ -101,16 +100,27 @@ export function ChatPanel({ hasKey }: ChatPanelProps) {
   const isEmpty = messages.length === 0
 
   return (
-    <Card className="flex h-[calc(100vh-12rem)] min-h-[28rem] flex-col gap-3 p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted-foreground">Chat</span>
+    <div className="panel flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+      <header className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-4 sm:px-6">
+        <div className="min-w-0">
+          <h1 className="m-0 truncate text-lg font-bold tracking-tight text-[var(--sea-ink)]">
+            Ask about your HR policies
+          </h1>
+          <p className="m-0 mt-0.5 truncate text-xs text-muted-foreground">
+            Grounded answers with citations from your knowledge base.
+          </p>
+        </div>
         <ModelPicker value={model} onChange={setModel} disabled={!hasKey} />
-      </div>
+      </header>
 
-      {!hasKey && <NoKeyBanner />}
+      {!hasKey && (
+        <div className="px-5 pt-4 sm:px-6">
+          <NoKeyBanner />
+        </div>
+      )}
 
       {isEmpty ? (
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-1 items-center justify-center px-5 py-6 sm:px-6">
           <SuggestedQuestions onPick={send} disabled={!hasKey} />
         </div>
       ) : (
@@ -123,13 +133,15 @@ export function ChatPanel({ hasKey }: ChatPanelProps) {
       )}
 
       {error && hasKey && (
-        <p className="m-0 flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="mx-5 mt-3 flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive sm:mx-6">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>{friendlyError(error.message)}</span>
         </p>
       )}
 
-      <Composer onSend={send} onStop={stop} disabled={!hasKey} isLoading={isLoading} />
-    </Card>
+      <div className="border-t border-border/60 px-5 py-4 sm:px-6">
+        <Composer onSend={send} onStop={stop} disabled={!hasKey} isLoading={isLoading} />
+      </div>
+    </div>
   )
 }
