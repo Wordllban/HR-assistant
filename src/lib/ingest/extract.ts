@@ -6,10 +6,12 @@
  * chunk's start offset back to a page number. Plain text is passed through verbatim
  * with no page map.
  *
- * No normalization happens here (de-hyphenation, header/footer stripping) — that is the
- * PDF-quality pass in #5.
+ * Extracted page text is normalized (de-hyphenation, whitespace collapse, running
+ * header/footer + bare page-number stripping) BEFORE concatenation, so page-boundary
+ * offsets are rebuilt from the cleaned pages and citation provenance stays correct (#5).
  */
 import { extractText } from 'unpdf'
+import { normalizePdfPages } from './normalize'
 
 export type SourceType = 'pdf' | 'text'
 
@@ -26,7 +28,8 @@ const PAGE_SEPARATOR = '\n\n'
 
 /** Extract a PDF's text page-by-page, tracking page-start offsets for provenance. */
 export async function extractPdf(data: Uint8Array): Promise<Extracted> {
-  const { text: pages } = await extractText(data, { mergePages: false })
+  const { text: rawPages } = await extractText(data, { mergePages: false })
+  const pages = normalizePdfPages(rawPages)
 
   const boundaries: number[] = []
   let cursor = 0
