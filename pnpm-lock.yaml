@@ -68,12 +68,18 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.7(react@19.2.7)
+      srvx:
+        specifier: ^0.11.16
+        version: 0.11.16
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
       tailwindcss:
         specifier: ^4.1.18
         version: 4.3.1
+      tsx:
+        specifier: ^4.22.4
+        version: 4.22.4
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
@@ -117,9 +123,6 @@ importers:
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0
-      tsx:
-        specifier: ^4.22.4
-        version: 4.22.4
       typescript:
         specifier: ^6.0.2
         version: 6.0.3
